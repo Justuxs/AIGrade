@@ -1,0 +1,11 @@
+﻿@using LLMEducation.Data.UIModels;
+@if (messageType == MessageType.NotFilledFull)
+{
+    <div style="background-color: #ffcccc; padding: 10px; border: 1px solid #ff0000;">
+        <p>In order to proceed, please complete all fields.</p>
+    </div>
+}
+
+@code {
+    [Parameter] public MessageType messageType { get; set; }
+}

@@ -1,0 +1,320 @@
+﻿@page "/test"
+@using LLMEducation.Data.Entity;
+@using LLMEducation.Data.UIModels;
+@using LLMEducation.Repos;
+@using LLMEducation.Service;
+@using LLMEducation.Pages.Quiz;
+@using MySurveyComponent.Components
+@inject NavigationManager NavigationManager
+@inject SurveyService SurveyService
+@inject SurveyDataRepo SurveyRepo
+
+
+<Modal @ref="modal" title="Invitation to Research Study" UseStaticBackdrop="true" CloseOnEscape="false">
+    <BodyTemplate>
+        <div>
+            <div>
+                <p>
+                    You are invited to participate in a research study that aims to evaluate the ability of three large language models (Mistral, LLama2, and Gemma) to generate educational content.
+                </p>
+                <ul>
+                    <li>Select a subject: Biology, Physics, or Chemistry.</li>
+                    <li>Complete 3 tests with one correct answer each.</li>
+                    <li>Evaluate the quality of each test through a 4-question survey.</li>
+                    <li>Compare the tests and choose the best and worst.</li>
+                </ul>
+            </div>
+            <p>
+                <strong>Important Notes:</strong> The author of this program is not responsible for the content of the generated tests. The answers may be inaccurate. Your participation in the study is entirely voluntary. The information you provide will be used only for research purposes and will be kept confidential. Thank you for your help!
+            </p>
+        </div>
+    </BodyTemplate>
+    <FooterTemplate>
+        <button @onclick="OnHideModalClick" class="btn btn-outline-secondary rounded-pill"> Back</button>
+        <button @onclick="OnAgreeModalClick" class="btn btn-primary rounded-pill">Agree</button>
+    </FooterTemplate>
+</Modal>
+
+<Modal @ref="modaluser" title="Hello there! 👋" UseStaticBackdrop="true" CloseOnEscape="false">
+    <BodyTemplate>
+        <div>
+            <div class="center-div text-center">
+                <p>
+                    Before we proceed, could you please share if you have a background in teaching?
+                </p>
+            </div>
+            <div class="center-div">
+
+                <img src="assets/imgs/teacher.jpg" class="teacher-img"/>
+            </div>
+        </div>
+    </BodyTemplate>
+    <FooterTemplate>
+        <button @onclick="OnHideModalUserClick" class="btn btn-outline-secondary rounded-pill"> No</button>
+        <button @onclick="OnAgreeModalUserClick" class="btn btn-primary rounded-pill">Yes</button>
+    </FooterTemplate>
+</Modal>
+
+<Modal @ref="modalthanks" title="Thank you for taking the time to complete this survey! 🙏" UseStaticBackdrop="true" CloseOnEscape="true">
+    <BodyTemplate>
+        <div>
+            <div class="center-div text-center">
+                <p>
+                    You're welcome to do another survey with a different subject or even the same subject with different tests if you're interested! 📝
+
+                </p>
+            </div>
+            <div class="center-div">
+
+                <img src="assets/imgs/thank.jpg" class="teacher-img" />
+            </div>
+        </div>
+    </BodyTemplate>
+    <FooterTemplate>
+        <button @onclick="OnThankModalUserClick" class="btn btn-primary rounded-pill">Close</button>
+    </FooterTemplate>
+</Modal>
+
+
+
+@if (isLoading)
+{
+    <LLMEducation.Pages.Components.Loader Title="Generating..."></LLMEducation.Pages.Components.Loader>
+}
+<ConfirmDialog @ref="dialog" />
+
+@if (!isSubjectSelected)
+{
+    <SubSelect OnSelect="OnSelectSubject" />
+}
+else
+{
+    @if (isQuizDisplay)
+    {
+        <Quiz quiz="dispalyedQuiz" PressedBack="MoveBackQuiz" PressedDone="MoveNextQuiz" Title="@getQuizTitle()">  </Quiz>
+
+    }
+    else
+    {
+        if (isLastSurvey)
+        {
+            <LastSurvey surveyData="surveyData.LastSurvey" GoBackClick="MoveBackFromLastSurvey" SubmitClick="DoneSurvey"></LastSurvey>
+        }
+        else
+        {
+            <ModelSurvey surveyData="dispalyedSurvey" GoBackClick="MoveBackSurvey" SubmitClick="MoveNextSurvey"></ModelSurvey>
+        }
+    } 
+}
+
+@code {
+    private SubjectTypes selectedSubject;
+    private bool isSubjectSelected = false;
+    private bool isQuizDisplay = true;
+    private bool isLastSurvey = false;
+    private bool isLoading = false;
+    private UIRating surveyData;
+    private UIQuiz dispalyedQuiz;
+    private UIModelSurvey dispalyedSurvey;
+    private string quizTitle;
+    private string userID = "";
+    //mistral 1, llama 2, gamma 3
+    private ModelType dispalyedModel = ModelType.Mistral;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            OnShowModalClick();
+        }
+    }
+
+    public string getQuizTitle()
+    {
+        return quizTitle;
+    }
+
+    private async Task OnSelectSubject(SubjectTypes value)
+    {
+        if (isLoading) return;
+        isLoading = true;
+        StateHasChanged();
+        try
+        {
+            selectedSubject = value;
+            var survey = await SurveyService.FormateUIModelRating(value);
+            if (survey == null) return;
+            isSubjectSelected = true;
+            surveyData = survey;
+            isLoading = false;
+            setQuizMistral();
+        }
+        catch (Exception ex)
+        {
+
+        }
+        isLoading = false;
+    }
+
+    private void MoveNextSurvey()
+    {
+        MoveNextQuiz();
+    }
+
+    private void MoveBackSurvey()
+    {
+        isQuizDisplay = true;
+    }
+
+    private void MoveBackFromLastSurvey()
+    {
+        isLastSurvey = false;
+    }
+
+
+    private async Task DoneSurvey()
+    {
+        try
+        {
+            surveyData.User = userID;
+            await SurveyRepo.SaveUISurvay(surveyData);
+            await OnShowThankModal();
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        fromStart();
+    }
+
+    private void MoveNextQuiz()
+    {
+        if (isQuizDisplay)
+        {
+            isQuizDisplay = false;
+            return;
+        }
+
+        if (dispalyedModel == ModelType.Mistral)
+        {
+            setQuizLlama();
+        }
+        else if (dispalyedModel == ModelType.LLama)
+        {
+            setQuizGemma();
+        }
+        else
+        {
+            isLastSurvey = true;
+            return;
+        }
+
+        isQuizDisplay = true;
+    }
+
+    private void MoveBackQuiz()
+    {
+        if (dispalyedModel == ModelType.Mistral)
+        {
+            fromStart();
+            return;
+        }
+        else if (dispalyedModel == ModelType.LLama)
+        {
+            setQuizMistral();
+            isQuizDisplay = false;
+        }
+        else if (dispalyedModel == ModelType.Gemma)
+        {
+            setQuizLlama();
+            isQuizDisplay = false;
+        }
+        else
+        {
+            return;
+        }
+    }
+
+    private void fromStart()
+    {
+        isSubjectSelected = false;
+        isQuizDisplay = true;
+        isLastSurvey = false;
+        isLoading = false;
+    }
+
+    private void setQuizLlama()
+    {
+        dispalyedQuiz = surveyData.LlamaQuiz;
+        dispalyedSurvey = surveyData.LammaSurvey;
+        dispalyedModel = ModelType.LLama;
+        quizTitle = "LLAMA";
+    }
+
+    private void setQuizMistral()
+    {
+        dispalyedQuiz = surveyData.MistralQuiz;
+        dispalyedSurvey = surveyData.MistralSurvey;
+        dispalyedModel = ModelType.Mistral;
+        quizTitle = "Mistral";
+    }
+
+    private void setQuizGemma()
+    {
+        dispalyedQuiz = surveyData.GemmaQuiz;
+        dispalyedSurvey = surveyData.GemmaSurvey;
+        dispalyedModel = ModelType.Gemma;
+        quizTitle = "Gemma";
+    }
+
+
+    private ConfirmDialog dialog;
+    private Modal modal;
+    private Modal modaluser;
+    private Modal modalthanks;
+
+    private async Task OnShowModalClick()
+    {
+        await modal?.ShowAsync();
+    }
+
+    private async Task OnHideModalClick()
+    {
+        await modal?.HideAsync();
+        NavigationManager.NavigateTo($"/");
+    }
+
+    private async Task OnAgreeModalClick()
+    {
+        await modal?.HideAsync();
+        await OnShowModalUserClick();
+    }
+
+
+    private async Task OnShowModalUserClick()
+    {
+        await modaluser?.ShowAsync();
+    }
+
+    private async Task OnHideModalUserClick()
+    {
+        await modaluser?.HideAsync();
+    }
+
+    private async Task OnShowThankModal()
+    {
+        await modalthanks?.ShowAsync();
+    }
+
+    private async Task OnThankModalUserClick()
+    {
+        await modalthanks?.HideAsync();
+    }
+
+    private async Task OnAgreeModalUserClick()
+    {
+        userID = "TEACHER";
+        await modaluser?.HideAsync();
+    }
+
+}

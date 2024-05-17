@@ -1,0 +1,171 @@
+﻿@page "/generate/{Id}"
+@using LLMEducation.Data.Entity
+@using LLMEducation.Service
+@inject ContentService contentService
+@inject QuizService quizService
+@inject LLMAPI llmService
+@inject NavigationManager nm
+@using LLMEducation.Enums
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage ProtectedSessionStore
+
+<h1 class="text-center">Generate New Test</h1>
+
+
+@if (isLoading)
+{
+    <LLMEducation.Pages.Components.Loader Title="Generating..."></LLMEducation.Pages.Components.Loader>
+}
+
+@if (!string.IsNullOrEmpty(errorMsg))
+{
+    <Alert Color="AlertColor.Warning"> <Icon Name="IconName.ExclamationTriangleFill" class="me-2"></Icon>@errorMsg</Alert>
+}
+
+@if (!string.IsNullOrEmpty(sucMsg))
+{
+    <Alert Color="AlertColor.Success"> <Icon Name="IconName.Safe" class="me-2"></Icon>@sucMsg</Alert>
+}
+
+@if (content != null && !isGenerated)
+{
+    <div class="row bg-white rounded m-1">
+        <div class="col">
+            <strong>Subject:</strong> @content.Subject
+        </div>
+        <div class="col">
+            <strong>Theme:</strong> @content.Theme
+        </div>
+        <div class="col">
+            <strong>Topic:</strong> @content.Topic
+        </div>
+        <div class="col">
+            <strong>Subtopic:</strong> @content.Subtopic
+        </div>
+    </div>
+
+    <div class="row bg-white rounded m-1 pb-1">
+        <div class="col">
+            <strong>Model Type:</strong>
+            <select class="form-select" @bind="@selectedModelType">
+                @foreach (var modelType in Enum.GetValues(typeof(ModelType)))
+                {
+                    <option value="@modelType">@modelType</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-auto">
+            <button class="btn btn-primary btn-lg rounded-pill" @onclick="async () => await GenerateTest()">Generate</button>
+        </div>
+    </div>
+}
+
+@if (testQ != null && isGenerated)
+{
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card mt-5">
+                    <div class="card-body">
+                        <h5 class="card-title">Question</h5>
+                        <p class="card-text">@testQ.QuestionText</p>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">Option A: @testQ.OptionA</li>
+                            <li class="list-group-item">Option B: @testQ.OptionB</li>
+                            <li class="list-group-item">Option C: @testQ.OptionC</li>
+                            <li class="list-group-item">Option D: @testQ.OptionD</li>
+                            <li class="list-group-item">Correct Answer: @testQ.CorrectAnswerLetter</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row justify-content-center">
+        <div class="col-auto">
+            <button class="btn btn-secondary btn-lg rounded-pill" @onclick=" () => isGenerated = false">Back</button>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary btn-lg rounded-pill" @onclick="async () => await GenerateTest()">Regenerate</button>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-success btn-lg rounded-pill" @onclick="async () => await Save()">Save</button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string Id { get; set; }
+
+    Content? content;
+    TestQ? testQ;
+    string errorMsg = string.Empty;
+    string sucMsg = string.Empty;
+    ModelType selectedModelType;
+    private bool isLoading = false;
+    private bool isGenerated = false;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var role = await ProtectedSessionStore.GetAsync<int>("role");
+        var role_ = role.Success ? role.Value : -1;
+
+        if (role_ != (int)UserRole.Admin)
+        {
+            nm.NavigateTo("/login");
+            return;
+        }
+
+        errorMsg = "";
+        content = await contentService.GetById(Id);
+        if (content == null)
+        {
+            errorMsg = "Content is not exist!";
+            return;
+        }
+    }
+
+    protected async Task GenerateTest()
+    {
+        errorMsg = "";
+        isLoading = true;
+        testQ = await llmService.GenerateTestQ(selectedModelType, content);
+        if (testQ == null)
+        {
+            errorMsg = "Failed to generate test! Please try again.";
+            isGenerated = false;
+            isLoading = false;
+            return;
+        }
+        isGenerated = true;
+        isLoading = false;
+    }
+
+    protected async Task Save()
+    {
+        if (testQ == null)
+        {
+            return;
+        }
+        errorMsg = "";
+        isLoading = true;
+
+        testQ.contentId = Id;
+        var res = await quizService.SaveTestQs(testQ);
+        if (res == null)
+        {
+            errorMsg = "Failed to save test!";
+            isGenerated = false;
+            isLoading = false;
+            return;
+        }
+
+        isGenerated = false;
+        isLoading = false;
+    }
+}

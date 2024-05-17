@@ -1,0 +1,11 @@
+.logo {
+    width: 35px;
+    height: 35px;
+    margin-right: 10px;
+}
+
+.my-rounded{
+    border-radius: 20px;
+    margin: 10px;
+    margin-inline: 30px;
+}

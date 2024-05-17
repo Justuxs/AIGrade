@@ -1,0 +1,108 @@
+﻿@page "/contentedit/{Id}"
+@using LLMEducation.Data.Entity
+@using LLMEducation.Service
+@inject ContentService contentService
+@using LLMEducation.Enums
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage ProtectedSessionStore
+@inject NavigationManager nm
+
+<h1 class="text-center">Edit Content</h1>
+@if (!string.IsNullOrEmpty(errorMsg))
+{
+    <Alert Color="AlertColor.Warning"> <Icon Name="IconName.ExclamationTriangleFill" class="me-2"></Icon>@errorMsg</Alert>
+}
+
+@if (!string.IsNullOrEmpty(sucMsg))
+{
+    <Alert Color="AlertColor.Success"> <Icon Name="IconName.Safe" class="me-2"></Icon>@sucMsg</Alert>
+}
+
+@if (content == null && string.IsNullOrEmpty(errorMsg))
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <form>
+
+                            <div class="mb-3">
+                                <label for="subject" class="form-label">Subject</label>
+                                <select class="form-select" id="subject" @bind="content.Subject">
+                                    <option value="Biology">Biology</option>
+                                    <option value="Physics">Physics</option>
+                                    <option value="Chemistry">Chemistry</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="theme" class="form-label">Theme</label>
+                                <input type="text" class="form-control" id="theme" @bind="content.Theme">
+                            </div>
+                            <div class="mb-3">
+                                <label for="topic" class="form-label">Topic</label>
+                                <input type="text" class="form-control" id="topic" @bind="content.Topic">
+                            </div>
+                            <div class="mb-3">
+                                <label for="subtopic" class="form-label">Subtopic</label>
+                                <input type="text" class="form-control" id="subtopic" @bind="content.Subtopic">
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" @onclick="async () => await Save()">Update</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string Id { get; set; }
+
+    Content content;
+
+    string errorMsg = string.Empty;
+    string sucMsg = string.Empty;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var role = await ProtectedSessionStore.GetAsync<int>("role");
+        var role_ = role.Success ? role.Value : -1;
+
+        if (role_ != (int)UserRole.Admin)
+        {
+            nm.NavigateTo("/login");
+            return;
+        }
+
+        errorMsg = "";
+        content = await contentService.GetById(Id);
+        if(content == null)
+        {
+            errorMsg = "Content is not exist!";
+        }
+    }
+
+    private async Task Save()
+    {
+        errorMsg = "";
+        var cnt = await contentService.Update(content);
+        if (cnt == null)
+        {
+            errorMsg = "Content failed to update!";
+            return;
+        }
+        content = cnt;
+        sucMsg = "Content is successfully updated";
+    }
+
+}

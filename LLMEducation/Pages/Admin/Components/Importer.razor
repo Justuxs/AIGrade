@@ -1,0 +1,83 @@
+﻿@using LLMEducation.Data.Entity;
+@using OfficeOpenXml
+@using System.IO
+@using System.Collections.Generic
+@using System.Threading.Tasks
+
+
+<div  class="modal fade show d-block" style="display: block; background-color: rgba(0, 0, 0, 0.5);">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Naujų klausimų importavimas</h5>
+                <button type="button" class="close btn-danger" @onclick="CloseDialog">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Pasirinti excel filą:</p>
+                <InputFile OnChange="@HandleFileChange" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    public Action<List<Content>> SetContents { get; set; }
+
+    List<Content> contents = new List<Content>();
+
+    public void CloseDialog()
+    {
+
+    }
+
+    async Task HandleFileChange(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if (file != null)
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                await file.OpenReadStream().CopyToAsync(memoryStream);
+
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                using (var package = new ExcelPackage(memoryStream))
+                {
+
+                    ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+
+                    contents = new List<Content>();
+
+                    for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+                    {
+
+                        string sub = "";
+                        try
+                        {
+                            string Subject = worksheet.Cells[row, 1].Value.ToString();
+                            string Theme = worksheet.Cells[row, 2].Value.ToString();
+                            string Topic = worksheet.Cells[row, 3].Value.ToString();
+                            sub += worksheet.Cells[row, 4].Value?.ToString();
+
+                            contents.Add(new Content
+                                {
+                                    Subject = Subject,
+                                    Theme = Theme,
+                                    Topic = Topic,
+                                    Subtopic = sub,
+                                });
+
+                        }
+                        catch{ }
+                    }
+                }
+            }
+            SetContents?.Invoke(contents);
+            contents.Clear();
+        }
+    }
+}

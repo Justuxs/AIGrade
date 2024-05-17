@@ -1,0 +1,93 @@
+﻿@page "/login"
+@using LLMEducation.Service
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+
+@inject UserService _UserService;
+@inject NavigationManager NavigationManager
+@inject AuthService authService
+@inject ProtectedSessionStorage ProtectedSessionStore
+
+
+
+<section class="vh-100">
+    <div class="container-fluid h-custom">
+        <div class="row d-flex justify-content-center align-items-center h-100 bg-white">
+            <h1 class="text-lg-center text-primary">Admin</h1>
+            <div class="col-md-9 col-lg-6 col-xl-5">
+                <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-login-form/draw2.webp"
+                     class="img-fluid" alt="Sample image">
+            </div>
+            <div class="col-md-8 col-lg-6 col-xl-4 offset-xl-1">
+                <form>
+
+                    <div data-mdb-input-init class="form-outline mb-4">
+                        <input type="email" id="form3Example3" class="form-control form-control-lg"
+                               placeholder="Enter a valid email address" @bind="email" />
+                        <label class="form-label" for="form3Example3">Email</label>
+                    </div>
+
+                    <div data-mdb-input-init class="form-outline mb-3">
+                        <input type="password" id="form3Example4" class="form-control form-control-lg"
+                               placeholder="Enter password" @bind="password" />
+                        <label class="form-label" for="form3Example4">Password</label>
+                    </div>
+
+                    <div class="text-center text-lg-start ">
+
+                        <p class="small fw-bold ">
+                            @msg
+                        </p>
+                    </div>
+                    <div class="text-center text-lg-start pt-2">
+                        <button type="button" data-mdb-button-init data-mdb-ripple-init class="btn btn-primary btn-lg"
+                                style="padding-left: 2.5rem; padding-right: 2.5rem;" @onclick="async () => await login()">
+                            Login
+                        </button>
+                        <p class="small fw-bold mt-2 pt-1 mb-0">
+                            Not admin? <a href="/"
+                                                  class="link-danger">Home</a>
+                        </p>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+
+
+    private string email = string.Empty;
+    private string password = string.Empty;
+    private string msg = string.Empty;
+
+    private async Task login()
+    {
+        msg = "";
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+        {
+            msg = "Please fill in all fields.";
+            return;
+        }
+        try
+        {
+            var user = await _UserService.Login(email, password);
+
+            if(user == null)
+            {
+                msg = "No such user found.";
+                return;
+            }
+            await ProtectedSessionStore.SetAsync("role", (int)user.Role);
+
+            NavigationManager.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            msg = ex.Message;
+            return;
+        }
+    }
+
+}

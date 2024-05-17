@@ -1,0 +1,119 @@
+﻿@page "/admin"
+
+@using BlazorBootstrap;
+@using LLMEducation.Data.Entity;
+@using LLMEducation.Enums
+@using LLMEducation.Repos;
+@using LLMEducation.Service;
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage ProtectedSessionStore
+@inject ContentRepo contentRepo
+@inject LLMAPI LLMAPI_
+@inject AuthService authService
+@inject NavigationManager nm
+
+
+<div class="container">
+
+
+    @if (!string.IsNullOrEmpty(ErrorMsg))
+    {
+        <Alert Color="AlertColor.Danger"> <Icon Name="IconName.ExclamationTriangleFill" class="me-2"></Icon>@ErrorMsg</Alert>
+    }
+
+    <h1>Welcome Admin!</h1>
+    <hr />
+
+    <h2>Control Buttons</h2>
+
+    <div class="row">
+@*         <div class="col-md-3">
+            <button type="button" class="btn btn-primary" @onclick="() => addContent()">Add Content</button>
+        </div> *@
+        <div class="col-md-3">
+            <button type="button" class="btn btn-success" @onclick="async () => await callAPI()">Call deepinfta</button>
+        </div>
+        <div class="col-md-3">
+            <button type="button" class="btn btn-warning" @onclick="() => alLContets()">Display contents</button>
+        </div>
+       
+    </div>
+
+
+    @if (isAddContentPress)
+    {
+        <LLMEducation.Pages.Admin.Components.Importer SetContents="SetContents"> </LLMEducation.Pages.Admin.Components.Importer>
+    }
+
+</div>
+
+@{
+    //</AuthorizeView>
+}
+
+@code {
+    private string ErrorMsg = string.Empty;
+
+    private bool isAddContentPress = false;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var role = await ProtectedSessionStore.GetAsync<int>("role");
+        var role_ = role.Success ? role.Value : -1;
+
+        if (role_ != (int)UserRole.Admin)
+        {
+            nm.NavigateTo("/login");
+        }
+    }
+
+
+    private void ClearError()
+    {
+        ErrorMsg = string.Empty;
+    }
+
+    public async void SetContents(List<Content> contents)
+    {
+        ClearError();
+        try
+        {
+            if (contents != null && contents.Count > 0)
+            {
+                contentRepo.SaveContent(contents);
+            }
+        }
+        catch (Exception e)
+        {
+            ErrorMsg = "Įvyko įkelimo klaida!";
+        }
+
+        isAddContentPress = false;
+        StateHasChanged();
+    }
+
+    public void addContent()
+    {
+        isAddContentPress = true;
+    }
+
+    public void alLContets()
+    {
+        nm.NavigateTo("/contentlist");
+    }
+
+
+    public async Task callAPI()
+    {
+        try
+        {
+            await LLMAPI_.FillTestQ();
+        }
+        catch (Exception ex)
+        {
+
+        }
+    }
+}

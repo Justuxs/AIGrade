@@ -1,0 +1,183 @@
+﻿@using LLMEducation.Data.Entity;
+@using LLMEducation.Data.UIModels;
+@using LLMEducation.Functions;
+@using LLMEducation.Repos;
+@inject TestQRepo _testQRepo
+
+@if (quiz != null)
+{
+    <div class="container-fluid w-100 h-100">
+        <div class="align-items-center justify-content-center">
+            <div class="modal-dialog">
+                <div class="modal-content round-div">
+                    <div class="text-center mt-2">
+                        <h6>@quiz.testQ.content.Subject &#8594; @quiz.testQ.content.Topic</h6>
+                    </div>
+
+                    <div class="modal-header text-center">
+                        <h4><span class="label label-warning" id="qid">2</span> @quiz.testQ.QuestionText</h4>
+                    </div>
+
+                    <div class="modal-body ">
+
+                        <div class="quiz" id="quiz" data-toggle="buttons">
+                            <label @onclick="@(() => OnButtonClick(1))" class="element-animation1 btn btn-lg btn-block w-100 mb-3" style="background-color: @Color1"><span class="btn-label">A<i class="glyphicon glyphicon-chevron-right"></i></span> @quiz.testQ.OptionA</label>
+                            <label @onclick="@(() => OnButtonClick(2))" class="element-animation2 btn btn-lg btn-block w-100 mb-3" style="background-color: @Color2"><span class="btn-label">B<i class="glyphicon glyphicon-chevron-right"></i></span> @quiz.testQ.OptionB</label>
+                            <label @onclick="@(() => OnButtonClick(3))" class="element-animation3 btn btn-lg btn-block w-100 mb-3" style="background-color: @Color3"><span class="btn-label">C<i class="glyphicon glyphicon-chevron-right"></i></span> @quiz.testQ.OptionC</label>
+                            <label @onclick="@(() => OnButtonClick(4))" class="element-animation4 btn btn-lg btn-block w-100 mb-3" style="background-color: @Color4"><span class="btn-label">D<i class="glyphicon glyphicon-chevron-right"></i></span> @quiz.testQ.OptionD</label>
+                        </div>
+
+                    </div>
+
+                    <div class="@(isAnswer? (@isCorrect? "white-green-bg" : "white-red-bg") : "bg-light") m-3 round-div ">
+
+                        @if (isAnswer)
+                        {
+                            <div class="mt-2  d-flex align-items-center justify-content-center">
+                                @if (isCorrect)
+                                {
+                                    <span class="text-success fw-bold">Correct</span>
+                                }
+                                else
+                                {
+                                    <span class="text-danger fw-bold">Incorrect</span>
+                                }
+                            </div>
+                            <div class="m-2 bg-light card round-div">
+
+                                <div class="d-flex align-items-center justify-content-center card-header-pills">
+                                    Corect answer is @quiz.testQ.CorrectAnswerLetter
+                                </div>
+
+                                <div class="d-flex align-items-center justify-content-center card-header-pills">
+                                    Explanation
+                                </div>
+
+                                <div class="card-body">
+                                    <label class="text-black w-100 small-text">
+                                        @quiz.testQ.CorrectAnswerExplanation
+                                    </label>
+                                </div>
+
+                            </div>
+
+                        }
+                    </div>
+
+                    <div class="d-flex align-items-center m-3 justify-content-between">
+                        <div>
+                            <button class="btn btn-outline-secondary rounded-pill"><i class="fas fa-arrow-left"></i> Previous</button>
+                        </div>
+                        @if (isAnswer)
+                        {
+                            <div class="mr-auto">
+                                <button class="btn btn-primary rounded-pill" >Next <i class="fas fa-arrow-right"></i></button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+@code {
+
+    [Inject] protected PreloadService PreloadService { get; set; } = default!;
+
+    private bool isAnswer = false;
+    private bool isCorrect = false;
+
+    private string Color1 = string.Empty;
+    private string Color2 = string.Empty;
+    private string Color3 = string.Empty;
+    private string Color4 = string.Empty;
+
+    public UIQuiz quiz;
+
+    protected override async Task OnInitializedAsync()
+    {
+        PreloadService.Show(SpinnerColor.Light, "Loading data...");
+        StateHasChanged();
+
+        Color1 = UIFunctions.GetRandomColor();
+        Color2 = UIFunctions.GetRandomColor();
+        Color3 = UIFunctions.GetRandomColor();
+        Color4 = UIFunctions.GetRandomColor();
+        TestQ testQ = await _testQRepo.GetRandom();
+
+        quiz = new UIQuiz()
+        {
+        };
+        quiz.testQ = testQ;
+
+        PreloadService.Hide();
+    }
+
+    public void OnButtonClick(int i)
+    {
+        isCorrect = false;
+        string answerLetter = "";
+        Color1 = UIFunctions.GetWrongAnswerColor();
+        Color2 = UIFunctions.GetWrongAnswerColor();
+        Color3 = UIFunctions.GetWrongAnswerColor();
+        Color4 = UIFunctions.GetWrongAnswerColor();
+
+        switch (i)
+        {
+            case 1:
+                Color1 = UIFunctions.GetSelcetedAnswerColor();
+                break;
+            case 2:
+                Color2 = UIFunctions.GetSelcetedAnswerColor();
+                break;
+            case 3:
+                Color3 = UIFunctions.GetSelcetedAnswerColor();
+                break;
+            case 4:
+                Color4 = UIFunctions.GetSelcetedAnswerColor();
+                break;
+            default:
+                return;
+        }
+
+        answerLetter = "a";
+        if (quiz.testQ.CorrectAnswerLetter.ToLower().Contains(answerLetter))
+        {
+            Color1 = UIFunctions.GetCorrectAnswerColor();
+            if (i == 1)
+            {
+                isCorrect = true;
+            }
+        }
+        answerLetter = "b";
+        if (quiz.testQ.CorrectAnswerLetter.ToLower().Contains(answerLetter))
+        {
+            Color2 = UIFunctions.GetCorrectAnswerColor();
+            if (i == 2)
+            {
+                isCorrect = true;
+            }
+        }
+        answerLetter = "c";
+        if (quiz.testQ.CorrectAnswerLetter.ToLower().Contains(answerLetter))
+        {
+            Color3 = UIFunctions.GetCorrectAnswerColor();
+            if (i == 3)
+            {
+                isCorrect = true;
+            }
+        }
+        answerLetter = "d";
+        if (quiz.testQ.CorrectAnswerLetter.ToLower().Contains(answerLetter))
+        {
+            Color4 = UIFunctions.GetCorrectAnswerColor();
+            if (i == 4)
+            {
+                isCorrect = true;
+            }
+        }
+
+
+        isAnswer = true;
+    }
+}

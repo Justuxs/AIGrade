@@ -1,0 +1,37 @@
+﻿
+<style>
+    .center {
+        width: 300px;
+        min-height: 300px;
+        padding: 5px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        background-color: #f8f8f8;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 214748364;
+    }
+
+</style>
+
+<div class=" center">
+    <div class="m-2">
+        <span class="loader"></span>
+    </div>
+    <div>
+        <h3>@Title</h3>
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    public string Title { get; set; } = "Loading...";
+
+}

@@ -1,0 +1,116 @@
+﻿@page "/contentlist"
+@using LLMEducation.Data.Entity
+@using LLMEducation.Service
+@inject ContentService contentService
+@inject NavigationManager nm
+@using LLMEducation.Enums
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage ProtectedSessionStore
+
+<h1 class="text-center">Content List</h1>
+
+<div class="row justify-content-center m-3">
+    <div class="col-auto">
+        <button class="btn btn-primary btn-lg rounded-pill" @onclick=" () => NewContent()">Add New Content</button>
+
+    </div>
+</div>
+
+
+@if (contents == null)
+{
+    <p>Loading...</p>
+}
+else if (contents.Count == 0)
+{
+    <p>No content available.</p>
+}
+else
+{
+    <div class="bg-white rounded">
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Theme</th>
+                    <th>Topic</th>
+                    <th>Subtopic</th>
+                    <th>Edit</th>
+                    <th>Delete</th>
+                    <th>View</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var content in contents)
+                {
+                    <tr>
+                        <td>@content.Subject</td>
+                        <td>@content.Theme</td>
+                        <td>@content.Topic</td>
+                        <td>@content.Subtopic</td>
+                        <td>
+                            <div class="row">
+                                <div class="col">
+                                    <button class="btn btn-primary" @onclick="() => EditContent(content)">Edit</button>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="row">
+                                <div class="col">
+                                    <button class="btn btn-danger" @onclick="async () => await DeleteContent(content)">Delete</button>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="row">
+                                <div class="col">
+                                    <button class="btn btn-outline-success" @onclick="() => ViewTests(content)">View Test</button>
+                                </div>
+                            </div>
+                        </td>
+
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    List<Content> contents;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var role = await ProtectedSessionStore.GetAsync<int>("role");
+        var role_ = role.Success ? role.Value : -1;
+
+        if (role_ != (int)UserRole.Admin)
+        {
+            nm.NavigateTo("/login");
+            return;
+        }
+
+        contents = await contentService.GetAllContents();
+    }
+
+    private void EditContent(Content content)
+    {
+        nm.NavigateTo($"/contentedit/{content.Id}");
+    }
+    private void NewContent()
+    {
+        nm.NavigateTo($"/newcontent");
+    }
+    private async Task DeleteContent(Content content)
+    {
+        await contentService.Delete(content);
+        contents = await contentService.GetAllContents();
+    }
+
+    private async Task ViewTests(Content content)
+    {
+        nm.NavigateTo($"/contentquizzes/{content.Id}");
+    }
+}

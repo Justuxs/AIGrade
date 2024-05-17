@@ -1,0 +1,224 @@
+﻿@using System.Linq
+@namespace MySurveyComponent.Components
+
+
+<style>
+
+    .wider {
+        width: 80px;
+    }
+
+    .survey-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 40px;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        background-color: #f8f8f8;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+        .survey-container h1 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+    .question-group {
+        margin-bottom: 30px;
+    }
+
+    label {
+        font-size: 18px;
+        color: #555;
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    .rating-options {
+        display: flex;
+        align-items: center;
+    }
+
+    .form-check-input {
+        display: none;
+    }
+
+    .rating-label {
+        display: inline-block;
+        width: 40px;
+        height: 40px;
+        line-height: 40px;
+        text-align: center;
+        border: 1px solid #ccc;
+        border-radius: 50%;
+        margin-right: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .checked-red {
+        background-color: #FF5733;
+        color: #fff;
+        border-color: #FF5733;
+    }
+
+    .checked-yes {
+        background-color: #008000;
+        color: #fff;
+        border-color: #008000;
+    }
+
+    .rating-label:hover,
+    .checked {
+        background-color: #007bff;
+        color: #fff;
+        border-color: #007bff;
+    }
+
+    .submit-btn {
+        padding: 10px 20px;
+        font-size: 18px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+        .submit-btn:hover {
+            background-color: #0056b3;
+        }
+</style>
+
+<div class="survey-container">
+    <div class="align-items-center text-center">
+        <h1>Survey</h1>
+
+    </div>
+
+    <div class="question-group">
+        <label for="question1 ">Ar testo klausimai atitinka temą?</label>
+        <div class="rating-options d-flex justify-content-center">
+
+            <input type="radio" class="form-check-input" name="rating1" id="question1-1" value="1">
+            <label @onclick="() => ChangeFirstStatusDialog(1)" for="question1-1" class="text-center rounded-pill p-lg-1 mx-3 border-option wider @(surveyData.Rating1 == 1? "checked-yes":"")">Taip</label>
+
+            <input type="radio" class="form-check-input" name="rating2" id="question1-2" value="2">
+            <label @onclick="() => ChangeFirstStatusDialog(2)" for="question1-1" class="text-center rounded-pill p-lg-1 mx-3 border-option wider @(surveyData.Rating1 == 2? "checked":"")">Nežinau</label>
+
+            <input type="radio" class="form-check-input" name="rating3" id="question1-3" value="3">
+            <label @onclick="() => ChangeFirstStatusDialog(3)" for="question1-3" class="text-center rounded-pill p-lg-1 mx-3 border-option wider @(surveyData.Rating1 == 3? "checked-red":"")">Ne</label>
+
+        </div>
+    </div>
+    <div class="question-group">
+        <label for="question2">Ar klausimas yra aiškiai suformuluotas ir nedviprasmiškas?</label>
+        <div class="rating-options d-flex justify-content-center">
+
+            <input type="radio" class="form-check-input" name="rating1" id="question1-1" value="1">
+            <label @onclick="() => ChangeSecondStatusDialog(1)" for="question2-1" class="wider text-center rounded-pill p-lg-1 mx-3 border-option @(surveyData.Rating2 == 1? "checked-yes":"")">Taip</label>
+
+            <input type="radio" class="form-check-input" name="rating2" id="question1-2" value="2">
+            <label @onclick="() => ChangeSecondStatusDialog(2)" for="question2-1" class="wider text-center rounded-pill p-lg-1 mx-3 border-option @(surveyData.Rating2 == 2? "checked":"")">Nežinau</label>
+
+            <input type="radio" class="form-check-input" name="rating3" id="question1-3" value="3">
+            <label @onclick="() => ChangeSecondStatusDialog(3)" for="question2-3" class="wider text-center rounded-pill p-lg-1 mx-3 border-option @(surveyData.Rating2 == 3? "checked-red":"")">Ne</label>
+
+        </div>
+    </div>
+    <div class="question-group">
+        <label for="question3">Ar atsakymaas yra teisingas ir atitinka mokslinę bei edukacinę informaciją?</label>
+        <div class="rating-options d-flex justify-content-center">
+
+            <input type="radio" class="form-check-input" name="rating1" id="question1-1" value="1">
+            <label @onclick="() => ChangeThirdStatusDialog(1)" for="question3-1" class="wider text-center rounded-pill p-lg-1 mx-3 border-option @(surveyData.Rating3 == 1? "checked-yes":"")">Taip</label>
+
+            <input type="radio" class="form-check-input" name="rating2" id="question1-2" value="2">
+            <label @onclick="() => ChangeThirdStatusDialog(2)" for="question3-1" class="wider text-center rounded-pill p-lg-1 mx-3 border-option @(surveyData.Rating3 == 2? "checked":"")">Nežinau</label>
+
+            <input type="radio" class="form-check-input" name="rating3" id="question1-3" value="3">
+            <label @onclick="() => ChangeThirdStatusDialog(3)" for="question3-3" class="wider text-center rounded-pill p-lg-1 mx-3 border-option @(surveyData.Rating3 == 3? "checked-red":"")">Ne</label>
+
+        </div>
+    </div>
+
+    <div class="question-group">
+        <label for="question4">Ar teisingo atsakymo paaiškinimai yra aiškūs, suprantamas ir informatyvūs?</label>
+        <div class="rating-options d-flex justify-content-center">
+
+            <input type="radio" class="form-check-input" name="rating1" id="question1-1" value="1">
+            <label @onclick="() => ChangeForthStatusDialog(1)" for="question4-1" class="wider text-center rounded-pill p-lg-1 mx-3 border-option @(surveyData.Rating4 == 1? "checked-yes":"")">Taip</label>
+
+            <input type="radio" class="form-check-input" name="rating2" id="question1-2" value="2">
+            <label @onclick="() => ChangeForthStatusDialog(2)" for="question4-1" class="wider text-center rounded-pill p-lg-1 mx-3 border-option @(surveyData.Rating4 == 2? "checked":"")">Nežinau</label>
+
+            <input type="radio" class="form-check-input" name="rating3" id="question1-3" value="3">
+            <label @onclick="() => ChangeForthStatusDialog(3)" for="question4-3" class="wider text-center rounded-pill p-lg-1 mx-3 border-option @(surveyData.Rating4 == 3? "checked-red":"")">Ne</label>
+
+        </div>
+    </div>
+
+    @*    <div class="question-group">
+    <label for="question4">Ar teisingo atsakymo paaiškinimai yra aiškūs, suprantamas ir informatyvūs?</label>
+    <div class="rating-options">
+    @for (int i = 1; i <= 5; i++)
+    {
+    var tempint = i;
+    <input type="radio" class="form-check-input" name="rating1" id="question1-@i" value="@i">
+    <label @onclick="() => ChangeForthStatusDialog(tempint)" for="question1-@i" class="rating-label @(surveyData.Rating4 == i? "checked":"")">@i</label>
+    }
+    </div>
+    </div>*@
+
+    <div class="d-flex align-items-center m-3 justify-content-between">
+        <div>
+            <button class="btn btn-outline-secondary rounded-pill"><i class="fas fa-arrow-left"></i> Previous</button>
+        </div>
+        @if (isAnswer)
+        {
+            <div class="mr-auto">
+                <button class="btn btn-primary rounded-pill">Next <i class="fas fa-arrow-right"></i></button>
+            </div>
+        }
+    </div>
+
+</div>
+
+@code {
+    class SurveyData
+    {
+        public int Rating1 { get; set; } = 0;
+        public int Rating2 { get; set; } = 0;
+        public int Rating3 { get; set; } = 0;
+        public int Rating4 { get; set; } = 0;
+    }
+
+    private bool isAnswer = true;
+
+    private SurveyData surveyData = new SurveyData();
+
+    private void ChangeFirstStatusDialog(int i)
+    {
+        surveyData.Rating1 = i;
+    }
+    private void ChangeSecondStatusDialog(int i)
+    {
+        surveyData.Rating2 = i;
+    }
+    private void ChangeThirdStatusDialog(int i)
+    {
+        surveyData.Rating3 = i;
+    }
+    private void ChangeForthStatusDialog(int i)
+    {
+        surveyData.Rating4 = i;
+    }
+    private void HandleSubmit()
+    {
+        // Implement your logic to handle submitted survey data (e.g., send to server, display results)
+        Console.WriteLine($"Survey submitted: Rating1: {surveyData.Rating1}, Rating2: {surveyData.Rating2}, Rating3: {surveyData.Rating3}");
+    }
+}

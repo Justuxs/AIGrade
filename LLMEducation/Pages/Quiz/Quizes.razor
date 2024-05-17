@@ -1,0 +1,179 @@
+﻿@page "/quizzes"
+@using LLMEducation.Data.Entity;
+@using LLMEducation.Data.UIModels;
+@using LLMEducation.Pages.Components
+@using LLMEducation.Pages.Survey
+@using LLMEducation.Repos;
+@using LLMEducation.Service;
+@using LLMEducation.Pages.Quiz;
+@using MySurveyComponent.Components
+@inject NavigationManager NavigationManager
+@inject SurveyService SurveyService
+@inject SurveyDataRepo SurveyRepo
+@inject QuizService QuizService
+
+
+<Modal @ref="modalresult" title=" You have finished the test 📝." UseStaticBackdrop="true" CloseOnEscape="true">
+    <BodyTemplate>
+        <div>
+            <div class="center-div text-center">
+                <p>
+                    Your result is: @result %
+                </p>
+            </div>
+            <div class="center-div">
+
+                <img src="assets/imgs/done-icon.png" class="teacher-img" />
+            </div>
+        </div>
+    </BodyTemplate>
+    <FooterTemplate>
+        <button @onclick="OnRModalUserClick" class="btn btn-primary rounded-pill">Close</button>
+    </FooterTemplate>
+</Modal>
+
+
+@if (isLoading)
+{
+    <LLMEducation.Pages.Components.Loader Title="Generating..."></LLMEducation.Pages.Components.Loader>
+}
+
+
+@if (!isSubjectSelected)
+{
+    <SubSelect OnSelect="OnSelectSubject" />
+}
+@if (isSubjectSelected && !isThemeSelected)
+{
+    <Selection Name="Theme" Options="filtratedThemes" SubmitBack="ThemeSelectBack" SubmitClick="ThemeSelectSubmit"> </Selection>
+}
+@if (isSubjectSelected && isThemeSelected && !isTopicSelected)
+{
+    <Selection Name="Topic" Options="filtratedTopics" SubmitBack="TopicSelectBack" SubmitClick="TopicSelectSubmit"> </Selection>
+}
+
+@if (isTopicSelected)
+{
+    @if (quizzes.Count == 0)
+    {
+
+    }
+    else
+    {
+        <Quiz quiz="quizzes[displayedIndex]" PressedBack="MoveBackQuiz" PressedDone="MoveNextQuiz" Title="@getQuizTitle()">  </Quiz>
+
+    }
+}
+
+
+
+@code {
+    private SubjectTypes selectedSubject;
+    private bool isSubjectSelected = false;
+
+    private List<string> filtratedThemes = new List<string>();
+    private string selectedTheme;
+    private bool isThemeSelected = false;
+
+    private List<string> filtratedTopics = new List<string>();
+    private string selectedTopic;
+    private bool isTopicSelected = false;
+
+    private List<UIQuiz> quizzes = new List<UIQuiz>();
+    private int displayedIndex = 0;
+
+    private double result = 0;
+
+
+    private bool isLoading = false;
+
+    private async Task OnSelectSubject(SubjectTypes value)
+    {
+        if (isLoading) return;
+        isLoading = true;
+        StateHasChanged();
+        try
+        {
+            filtratedThemes = await QuizService.GetContentTheme(value);
+            isSubjectSelected = true;
+        }
+        catch (Exception ex)
+        {
+        }
+        isLoading = false;
+    }
+
+    public void ThemeSelectBack()
+    {
+        isThemeSelected = false;
+        isSubjectSelected = false;
+    }
+
+    public void ThemeSelectSubmit(string theme)
+    {
+        selectedTheme = theme;
+        isLoading = true;
+        filtratedTopics = QuizService.GetContentTopic(theme);
+        isSubjectSelected = true;
+        isThemeSelected = true;
+        isLoading = false;
+
+    }
+
+    public void TopicSelectBack()
+    {
+        isTopicSelected = false;
+        isThemeSelected = false;
+    }
+
+    public async Task TopicSelectSubmit(string topic)
+    {
+        selectedTopic = topic;
+        isTopicSelected = true;
+        isLoading = true;
+        quizzes = await QuizService.GetFiltatedQuizes(selectedTheme, topic);
+        isLoading = false;
+
+    }
+
+
+    private void MoveBackQuiz()
+    {
+        isSubjectSelected = false;
+
+        isThemeSelected = false;
+
+        isTopicSelected = false;
+
+        displayedIndex = 0;
+    }
+
+    private string getQuizTitle()
+    {
+        return selectedSubject.ToString() + " - " + selectedTheme + " - " + selectedTopic;
+    }
+
+    private void MoveNextQuiz()
+    {
+        if (displayedIndex+1 >= quizzes.Count)
+        {
+            result = Math.Round((quizzes.Where(e => e.isCorrect).Count() * 100) / (double)quizzes.Count);
+            modalresult.ShowAsync();
+        }
+        else
+        {
+            displayedIndex++;
+        }
+    }
+
+    private Modal modalresult;
+
+
+    private async Task OnRModalUserClick()
+    {
+        await modalresult?.HideAsync();
+        MoveBackQuiz();
+    }
+
+
+}
